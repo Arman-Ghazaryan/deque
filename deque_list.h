@@ -1,10 +1,10 @@
 #pragma once
-#include <list>
 #include <vector>
 #include <iostream>
 #include <algorithm>
 
-constexpr size_t arr_size = 1000000;
+constexpr size_t arr_size = 5;
+size_t loc_size = 5;
 
 template <typename T>
 class deque
@@ -99,7 +99,7 @@ public:
     // deque(std::vector<T> const &data);
     // ~deque();
 
-    void push_back(T data);
+    // void push_back(T data);
     // void push_back(std::vector<T> const &data);
     // void push_front(T data);
     // void push_front(std::vector<T> const &data);
@@ -127,15 +127,36 @@ public:
     T &operator[](size_t ind);
 
 private:
-    std::list<T *> data;
+    T **buffer;
     size_t Begin;
     size_t End;
+    size_t a_begin;
+    size_t a_end;
+
+    T *reserve_();
 };
+
+template <typename T>
+T *deque<T>::reserve_()
+{
+    T *temp = (T *)malloc(sizeof(T) * arr_size);
+    T *bffr = temp;
+
+    for (; temp != bffr + arr_size; ++temp)
+        new (temp) T();
+
+    return bffr;
+}
 
 template <typename T>
 deque<T>::deque()
 {
-    data.push_back(new T[arr_size]);
+    buffer = new T *[loc_size];
+    for (int i = 0; i < loc_size; ++i)
+        buffer[i] = reserve_();
+
+    a_begin = loc_size / 2;
+    a_end = loc_size / 2;
     Begin = 0;
     End = 0;
 }
@@ -143,37 +164,97 @@ deque<T>::deque()
 template <typename T>
 deque<T>::deque(size_t size)
 {
+    buffer = new T *[loc_size];
+    a_begin = loc_size / 2;
+    a_end = loc_size / 2;
+    buffer[a_begin] = reserve_();
     Begin = 0;
-    End = size % arr_size;
-    data.push_back(new T[arr_size]);
-    for (int i = 0; i < size / arr_size; ++i)
-        data.push_back(new T[arr_size]);
+    End = 0;
+
+    for (int i = 0; i < size; ++i)
+    {
+        if (End == arr_size)
+        {
+            if (a_end == loc_size - 1)
+            {
+                loc_size *= 2;
+                T **new_buffer = new T *[loc_size];
+
+                a_end = a_begin;
+                for (int i = 0; i < loc_size / 2 - a_begin; ++a_end, ++i)
+                {
+                    new_buffer[loc_size / 4 + i] = buffer[a_end];
+                }
+            }
+            End = 0;
+            ++a_end;
+            buffer[a_end] = reserve_();
+        }
+        buffer[a_end][End] = {};
+        ++End;
+    }
 }
 
 template <typename T>
 deque<T>::deque(size_t size, T data)
 {
-    typename std::list<T *>::iterator it;
-    T *pos;
+    buffer = new T *[loc_size];
+    a_begin = loc_size / 2;
+    a_end = loc_size / 2;
+    buffer[a_begin] = reserve_();
     Begin = 0;
-    End = size % arr_size;
+    End = 0;
 
-    this->data.push_back(new T[arr_size]);
-    if (size != arr_size)
-        for (int i = 0; i < size / arr_size; ++i)
-            this->data.push_back(new T[arr_size]);
-
-    it = this->data.begin();
-    pos = *it;
-    for (int i = 0; i < size; ++i, ++pos)
+    for (int i = 0; i < size; ++i)
     {
-        if (pos == *it + arr_size)
+        if (End == arr_size)
         {
-            ++it;
-            pos = *it;
+            if (a_end == loc_size - 1)
+            {
+                loc_size *= 2;
+                T **new_buffer = new T *[loc_size];
+
+                for (int j = 0; j < loc_size / 2 - a_begin; ++j)
+                {
+                    new_buffer[loc_size / 4 + j] = buffer[j + a_begin];
+                }
+                a_end = loc_size / 4 + (loc_size / 2 - a_begin) - 1;
+                a_begin = loc_size / 4;
+
+                for (int j = a_begin; j < loc_size / 2; ++j)
+                    delete[] buffer[j];
+                delete[] buffer;
+                buffer = new_buffer;
+            }
+            End = 0;
+            ++a_end;
+            buffer[a_end] = reserve_();
         }
-        *pos = data;
+        buffer[a_end][End] = data;
+        ++End;
     }
+}
+
+template <typename T>
+T &deque<T>::operator[](size_t ind)
+{
+    if (ind < arr_size)
+        return buffer[a_begin][ind];
+    return buffer[a_begin + ind / arr_size][ind % arr_size];
+    // T *pos = data.front();
+    // if (ind == 0)
+    //     return *pos;
+    // else
+    // {
+    //     typename std::list<T *>::iterator it = data.begin();
+
+    //     for (int i = 0; i < (ind + Begin) / arr_size; ++i)
+    //         ++it;
+
+    //     pos = *it;
+    //     pos += (ind + Begin) % arr_size;
+    //     return *pos;
+    // }
 }
 
 // template <typename T>
@@ -197,19 +278,19 @@ deque<T>::deque(size_t size, T data)
 //     clear();
 // }
 
-template <typename T>
-void deque<T>::push_back(T data)
-{
-    if (End == arr_size)
-    {
-        this->data.push_back(new T[arr_size]);
-        End = 0;
-    }
+// template <typename T>
+// void deque<T>::push_back(T data)
+// {
+//     if (End == arr_size)
+//     {
+//         this->data.push_back(new T[arr_size]);
+//         End = 0;
+//     }
 
-    T *pos = this->data.back();
-    pos[End] = data;
-    ++End;
-}
+//     T *pos = this->data.back();
+//     pos[End] = data;
+//     ++End;
+// }
 
 // template <typename T>
 // void deque<T>::push_back(std::vector<T> const &data)
@@ -493,22 +574,3 @@ void deque<T>::push_back(T data)
 //     it.pos = End->node_size - 1;
 //     return it;
 // }
-
-template <typename T>
-T &deque<T>::operator[](size_t ind)
-{
-    T *pos = data.front();
-    if (ind == 0)
-        return *pos;
-    else
-    {
-        typename std::list<T *>::iterator it = data.begin();
-
-        for (int i = 0; i < (ind + Begin) / arr_size; ++i)
-            ++it;
-
-        pos = *it;
-        pos += (ind + Begin) % arr_size;
-        return *pos;
-    }
-}
