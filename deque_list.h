@@ -3,8 +3,8 @@
 #include <iostream>
 #include <algorithm>
 
-constexpr size_t arr_size = 5;
-size_t loc_size = 5;
+constexpr size_t arr_size = 1000000;
+size_t loc_size = 100;
 
 template <typename T>
 class deque
@@ -99,7 +99,7 @@ public:
     // deque(std::vector<T> const &data);
     // ~deque();
 
-    // void push_back(T data);
+    void push_back(T data);
     // void push_back(std::vector<T> const &data);
     // void push_front(T data);
     // void push_front(std::vector<T> const &data);
@@ -132,6 +132,7 @@ private:
     size_t End;
     size_t a_begin;
     size_t a_end;
+    size_t node_size;
 
     T *reserve_();
 };
@@ -159,6 +160,7 @@ deque<T>::deque()
     a_end = loc_size / 2;
     Begin = 0;
     End = 0;
+    node_size = 0;
 }
 
 template <typename T>
@@ -188,6 +190,7 @@ deque<T>::deque(size_t size)
             }
             End = 0;
             ++a_end;
+            ++node_size;
             buffer[a_end] = reserve_();
         }
         buffer[a_end][End] = {};
@@ -218,21 +221,49 @@ deque<T>::deque(size_t size, T data)
                 {
                     new_buffer[loc_size / 4 + j] = buffer[j + a_begin];
                 }
+
+                buffer = new_buffer;
+
                 a_end = loc_size / 4 + (loc_size / 2 - a_begin) - 1;
                 a_begin = loc_size / 4;
-
-                for (int j = a_begin; j < loc_size / 2; ++j)
-                    delete[] buffer[j];
-                delete[] buffer;
-                buffer = new_buffer;
             }
             End = 0;
             ++a_end;
+            ++node_size;
             buffer[a_end] = reserve_();
         }
         buffer[a_end][End] = data;
         ++End;
     }
+}
+
+template <typename T>
+void deque<T>::push_back(T data)
+{
+    if (End == arr_size)
+    {
+        if (a_end == loc_size - 1)
+        {
+            loc_size *= 2;
+            T **new_buffer = new T *[loc_size];
+
+            for (int j = 0; j < loc_size / 2 - a_begin; ++j)
+            {
+                new_buffer[loc_size / 4 + j] = buffer[j + a_begin];
+            }
+
+            buffer = new_buffer;
+
+            a_end = loc_size / 4 + (loc_size / 2 - a_begin) - 1;
+            a_begin = loc_size / 4;
+        }
+        End = 0;
+        ++a_end;
+        ++node_size;
+        buffer[a_end] = reserve_();
+    }
+    buffer[a_end][End] = data;
+    ++End;
 }
 
 template <typename T>
@@ -276,20 +307,6 @@ T &deque<T>::operator[](size_t ind)
 // deque<T>::~deque()
 // {
 //     clear();
-// }
-
-// template <typename T>
-// void deque<T>::push_back(T data)
-// {
-//     if (End == arr_size)
-//     {
-//         this->data.push_back(new T[arr_size]);
-//         End = 0;
-//     }
-
-//     T *pos = this->data.back();
-//     pos[End] = data;
-//     ++End;
 // }
 
 // template <typename T>
