@@ -9,6 +9,8 @@ size_t loc_size = 100;
 template <typename T>
 class deque
 {
+    using matrix = std::vector<std::vector<T>>;
+
 public:
     // struct iterator
     // {
@@ -101,7 +103,7 @@ public:
 
     void push_back(T data);
     // void push_back(std::vector<T> const &data);
-    // void push_front(T data);
+    void push_front(T data);
     // void push_front(std::vector<T> const &data);
 
     // void insert(T data, int pos);
@@ -127,151 +129,157 @@ public:
     T &operator[](size_t ind);
 
 private:
-    T **buffer;
-    size_t Begin;
-    size_t End;
-    size_t a_begin;
-    size_t a_end;
-    size_t node_size;
-
-    T *reserve_();
+    matrix buffer;
+    size_t pos_begin;
+    size_t pos_end;
+    size_t pos_buff_begin;
+    size_t pos_buff_end;
+    size_t _size;
 };
-
-template <typename T>
-T *deque<T>::reserve_()
-{
-    T *temp = (T *)malloc(sizeof(T) * arr_size);
-    T *bffr = temp;
-
-    for (; temp != bffr + arr_size; ++temp)
-        new (temp) T();
-
-    return bffr;
-}
 
 template <typename T>
 deque<T>::deque()
 {
-    buffer = new T *[loc_size];
-    for (int i = 0; i < loc_size; ++i)
-        buffer[i] = reserve_();
-
-    a_begin = loc_size / 2;
-    a_end = loc_size / 2;
-    Begin = 0;
-    End = 0;
-    node_size = 0;
+    buffer.resize(loc_size, std::vector<T>(arr_size));
+    pos_buff_begin = loc_size / 2;
+    pos_buff_end = loc_size / 2;
+    pos_begin = 0;
+    pos_end = 0;
+    _size = 0;
 }
 
 template <typename T>
 deque<T>::deque(size_t size)
 {
-    buffer = new T *[loc_size];
-    a_begin = loc_size / 2;
-    a_end = loc_size / 2;
-    buffer[a_begin] = reserve_();
-    Begin = 0;
-    End = 0;
+    buffer.resize(loc_size, std::vector<T>(arr_size));
+    pos_buff_begin = loc_size / 2;
+    pos_buff_end = loc_size / 2;
+    pos_begin = 0;
+    _size = size;
+    pos_end = 0;
 
     for (int i = 0; i < size; ++i)
     {
-        if (End == arr_size)
+        if (pos_end == arr_size)
         {
-            if (a_end == loc_size - 1)
+            if (pos_buff_end == loc_size - 1)
             {
                 loc_size *= 2;
-                T **new_buffer = new T *[loc_size];
+                matrix new_buffer(loc_size, std::vector<T>(arr_size));
 
-                a_end = a_begin;
-                for (int i = 0; i < loc_size / 2 - a_begin; ++a_end, ++i)
-                {
-                    new_buffer[loc_size / 4 + i] = buffer[a_end];
-                }
+                for (int j = 0; j < loc_size / 2 - pos_buff_begin; ++j)
+                    new_buffer[loc_size / 4 + j] = buffer[j + pos_buff_begin];
+
+                pos_buff_end = loc_size / 4 + (loc_size / 2 - pos_buff_begin) - 1;
+                pos_buff_begin = loc_size / 4;
+                buffer = new_buffer;
             }
-            End = 0;
-            ++a_end;
-            ++node_size;
-            buffer[a_end] = reserve_();
+            pos_end = 0;
+            ++pos_buff_end;
         }
-        buffer[a_end][End] = {};
-        ++End;
+        buffer[pos_buff_end][pos_end] = {};
+        ++pos_end;
     }
 }
 
 template <typename T>
 deque<T>::deque(size_t size, T data)
 {
-    buffer = new T *[loc_size];
-    a_begin = loc_size / 2;
-    a_end = loc_size / 2;
-    buffer[a_begin] = reserve_();
-    Begin = 0;
-    End = 0;
+    buffer.resize(loc_size, std::vector<T>(arr_size));
+    pos_buff_begin = loc_size / 2;
+    pos_buff_end = loc_size / 2;
+    pos_begin = 0;
+    _size = size;
+    pos_end = 0;
 
     for (int i = 0; i < size; ++i)
     {
-        if (End == arr_size)
+        if (pos_end == arr_size)
         {
-            if (a_end == loc_size - 1)
+            if (pos_buff_end == loc_size - 1)
             {
                 loc_size *= 2;
-                T **new_buffer = new T *[loc_size];
+                matrix new_buffer(loc_size, std::vector<T>(arr_size));
 
-                for (int j = 0; j < loc_size / 2 - a_begin; ++j)
-                {
-                    new_buffer[loc_size / 4 + j] = buffer[j + a_begin];
-                }
+                for (int j = 0; j < loc_size / 2 - pos_buff_begin; ++j)
+                    new_buffer[loc_size / 4 + j] = buffer[j + pos_buff_begin];
 
+                pos_buff_end = loc_size / 4 + (loc_size / 2 - pos_buff_begin) - 1;
+                pos_buff_begin = loc_size / 4;
                 buffer = new_buffer;
-
-                a_end = loc_size / 4 + (loc_size / 2 - a_begin) - 1;
-                a_begin = loc_size / 4;
             }
-            End = 0;
-            ++a_end;
-            ++node_size;
-            buffer[a_end] = reserve_();
+            pos_end = 0;
+            ++pos_buff_end;
         }
-        buffer[a_end][End] = data;
-        ++End;
+        buffer[pos_buff_end][pos_end] = data;
+        ++pos_end;
     }
 }
 
 template <typename T>
 void deque<T>::push_back(T data)
 {
-    if (End == arr_size)
+    if (pos_end == arr_size)
     {
-        if (a_end == loc_size - 1)
+        if (pos_buff_end == loc_size - 1)
         {
             loc_size *= 2;
-            T **new_buffer = new T *[loc_size];
+            matrix new_buffer(loc_size, std::vector<T>(arr_size));
 
-            for (int j = 0; j < loc_size / 2 - a_begin; ++j)
-            {
-                new_buffer[loc_size / 4 + j] = buffer[j + a_begin];
-            }
+            for (int j = 0; j < loc_size / 2 - pos_buff_begin; ++j)
+                new_buffer[loc_size / 4 + j] = buffer[j + pos_buff_begin];
 
+            pos_buff_end = loc_size / 4 + (loc_size / 2 - pos_buff_begin) - 1;
+            pos_buff_begin = loc_size / 4;
             buffer = new_buffer;
-
-            a_end = loc_size / 4 + (loc_size / 2 - a_begin) - 1;
-            a_begin = loc_size / 4;
         }
-        End = 0;
-        ++a_end;
-        ++node_size;
-        buffer[a_end] = reserve_();
+        pos_end = 0;
+        ++pos_buff_end;
     }
-    buffer[a_end][End] = data;
-    ++End;
+    buffer[pos_buff_end][pos_end] = data;
+    ++pos_end;
+    ++_size;
+}
+
+template <typename T>
+void deque<T>::push_front(T data)
+{
+    if (pos_begin == 0)
+    {
+        if (_size != 0)
+        {
+            if (pos_buff_begin == 0)
+            {
+                loc_size *= 2;
+                matrix new_buffer(loc_size, std::vector<T>(arr_size));
+
+                for (int j = 0; j < loc_size / 2 - pos_buff_begin; ++j)
+                    new_buffer[loc_size / 4 + j] = buffer[j + pos_buff_begin];
+
+                pos_buff_end = loc_size / 4 + (loc_size / 2 - pos_buff_begin) - 1;
+                pos_buff_begin = loc_size / 4;
+                buffer = new_buffer;
+            }
+            pos_begin = arr_size;
+            --pos_buff_begin;
+        }
+        else
+        {
+            pos_begin = 1;
+            ++pos_end;
+        }
+    }
+    --pos_begin;
+    buffer[pos_buff_begin][pos_begin] = data;
+    ++_size;
 }
 
 template <typename T>
 T &deque<T>::operator[](size_t ind)
 {
     if (ind < arr_size)
-        return buffer[a_begin][ind];
-    return buffer[a_begin + ind / arr_size][ind % arr_size];
+        return buffer[pos_buff_begin][ind + pos_begin];
+    return buffer[pos_buff_begin + ind / arr_size][ind % arr_size];
     // T *pos = data.front();
     // if (ind == 0)
     //     return *pos;
@@ -314,31 +322,6 @@ T &deque<T>::operator[](size_t ind)
 // {
 //     for (int i = 0; i < data.size(); ++i)
 //         push_back(data[i]);
-// }
-
-// template <typename T>
-// void deque<T>::push_front(T data)
-// {
-//     if (i_begin == 0)
-//     {
-//         if (Size != 0)
-//         {
-//             Begin->pointer_prev = new node;
-//             Begin->pointer_prev->pointer_next = Begin;
-//             Begin = Begin->pointer_prev;
-//             Begin->pointer_prev = Begin;
-//             reserve_assign(Begin, {});
-//             Begin->node_size = 0;
-//             i_begin = arr_size;
-//         }
-//         else
-//             i_begin = 1;
-//     }
-
-//     --i_begin;
-//     Begin->data[i_begin] = data;
-//     ++Begin->node_size;
-//     ++Size;
 // }
 
 // template <typename T>
